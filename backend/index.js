@@ -4,6 +4,7 @@ import userRoutes from './routes/userRoutes.js';
 
 dotenv.config();
 const app = express();
+app.set('json spaces', 2);
 app.use(express.json());
 
 app.get('/', (req, res) => {
