@@ -9,7 +9,7 @@ export default function App() {
       <Promo />
       <About />
       <Contact />
-      <Footer />
+      <Footer /> 
     </>
   );
 }
