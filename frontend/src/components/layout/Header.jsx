@@ -67,7 +67,7 @@ export default function Header() {
           className="flex items-center gap-3 cursor-pointer"
         >
           <img
-            src="/assets/logo.png"
+            src="src/assets/logo.png"
             alt="DonClaudio's Logo"
             width={48}
             height={48}

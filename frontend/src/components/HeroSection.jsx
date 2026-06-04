@@ -85,7 +85,7 @@ export default function HeroSection() {
           <div className="relative">
             <div className="relative w-full h-75 sm:h-100 lg:h-150 rounded-3xl overflow-hidden bg-[#a4bbab] flex items-center justify-center">
               <img
-                src="/assets/hero_image.JPG"
+                src="src/assets/hero_image.png"
                 alt="Delicious Lechon"
                 className="w-full h-full object-cover"
                 onError={(e) => {

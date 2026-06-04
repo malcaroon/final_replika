@@ -42,10 +42,10 @@ export default function About() {
           </div>
 
           <div className="relative">
-            <div className="absolute -inset-4 rounded-3xl bg-[#fbd897]/20" />
-            <div className="relative w-full h-150 rounded-3xl overflow-hidden bg-[#a4bbab] flex items-center justify-center">
+            <div className="relative -inset-4 rounded-3xl bg-[#fbd897]/20" />
+            <div className="relative w-full h-150 rounded-3xl overflow-hidden bg-[#a4bbab]">
               <img
-                src="/assets/ourstory.JPG"
+                src="src/assets/ourstory.png"
                 alt="About DonClaudio's"
                 className="w-full h-full object-cover"
                 onError={(e) => {

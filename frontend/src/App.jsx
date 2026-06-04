@@ -1,4 +1,4 @@
-import {HeroSection, Highlights, Promo, About, Contact, Header, Footer} from './components/layout';
+import {Header, HeroSection, Highlights, Promo, About, Contact, Footer} from '.';
 
 export default function App() {
   return (
@@ -9,7 +9,7 @@ export default function App() {
       <Promo />
       <About />
       <Contact />
-      <Footer /> 
+      <Footer />
     </>
   );
 }

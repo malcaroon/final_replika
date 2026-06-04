@@ -19,7 +19,7 @@ export default function Highlights() {
           <div className="md:col-span-2 relative overflow-hidden rounded-2xl h-125">
             <div className="absolute inset-0 transition-transform duration-700 scale-105 group-hover:scale-210">
               <img
-                src="/assets/highlights1.JPG"
+                src="src/assets/highlights1.png"
                 alt="Restaurant Interior"
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -41,7 +41,7 @@ export default function Highlights() {
             <div className="relative overflow-hidden rounded-2xl h-60 group">
               <div className="absolute inset-0 transition-transform duration-700 scale-105">
                 <img
-                  src="/assets/Highlight2.png"
+                  src="src/assets/Highlight2.png"
                   alt="Dining Area"
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -59,7 +59,7 @@ export default function Highlights() {
             <div className="relative overflow-hidden rounded-2xl h-60 group">
               <div className="absolute inset-0 transition-transform duration-700 scale-105">
                 <img
-                  src="/assets/Highlights3.png"
+                  src="src/assets/Highlight3.png"
                   alt="Our Specialty"
                   className="w-full h-full object-cover"
                   onError={(e) => {
