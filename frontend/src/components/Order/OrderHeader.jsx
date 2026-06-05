@@ -1,5 +1,5 @@
 import {ShoppingCart, Menu, X} from 'lucide-react';
-import {useEffect, useState, useMemo} from 'react';
+import {useEffect, useState} from 'react';
 
 const navItems = [
   {id: 'home', label: 'Home'},
@@ -13,15 +13,6 @@ const scrollToSection = (id) => {
   document.getElementById(id)?.scrollIntoView({behavior: 'smooth'});
 };
 
-const MOCK_CART_ITEMS = [
-  {productId: 'lechon-1', name: 'Whole Lechon', price: 150, qty: 1},
-  {productId: 'kawali-1', name: 'Lechon Kawali', price: 120, qty: 2},
-];
-
-const MOCK_PROMOS = [
-  {id: 'promo-1', name: 'Weekend Special', discountPercent: 10, productIds: ['lechon-1']},
-];
-
 function getCartUniqueCount(items) {
   return new Set(items.map((i) => i.productId)).size;
 }
@@ -30,41 +21,17 @@ function getCartSubtotal(items) {
   return items.reduce((sum, i) => sum + i.price * i.qty, 0);
 }
 
-function getDiscountedUnitPrice({promos, productId, basePrice}) {
-  const matchingPromo = promos.find(
-    (p) => p.productIds && p.productIds.includes(productId)
-  );
-  if (matchingPromo && matchingPromo.discountPercent) {
-    return {unitPrice: Math.round(basePrice * (1 - matchingPromo.discountPercent / 100))};
-  }
-  return {unitPrice: basePrice};
-}
-
-export default function Header({onNavigate = () => {}}) {
+export default function OrderHeader({onNavigate = () => {}, onCartClick, cartItems = []}) {
   const [activeSection, setActiveSection] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [orderModalOpen, setOrderModalOpen] = useState(false);
-  const [cartItems] = useState(MOCK_CART_ITEMS);
-  const [promos] = useState(MOCK_PROMOS);
 
   const closeModal = () => {
     setOrderModalOpen(false);
   };
 
-  const isOrderRoute = false;
-
   const cartUniqueCount = getCartUniqueCount(cartItems);
-  const cartSubtotal = useMemo(() => {
-    if (promos.length === 0) return getCartSubtotal(cartItems);
-    return cartItems.reduce((sum, i) => {
-      const {unitPrice} = getDiscountedUnitPrice({
-        promos,
-        productId: i.productId,
-        basePrice: i.price,
-      });
-      return sum + unitPrice * i.qty;
-    }, 0);
-  }, [cartItems, promos]);
+  const cartSubtotal = getCartSubtotal(cartItems);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -106,19 +73,7 @@ export default function Header({onNavigate = () => {}}) {
   };
 
   const handleCartClick = () => {
-    if (!isOrderRoute) {
-      setOrderModalOpen(true);
-      setMobileMenuOpen(false);
-      return;
-    }
-
-    if (cartUniqueCount > 0) {
-      setMobileMenuOpen(false);
-      return;
-    }
-
-    setOrderModalOpen(true);
-    setMobileMenuOpen(false);
+    onCartClick?.();
   };
 
   const handleContinueAsGuest = () => {
@@ -188,24 +143,19 @@ export default function Header({onNavigate = () => {}}) {
           </a>
           <button
             onClick={handleCartClick}
-            className="flex items-center gap-2 bg-[#3c5e45] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#2d4a35] transition-colors cursor-pointer"
+            className="flex items-center justify-center bg-[#3c5e45] text-white p-2 rounded-xl hover:bg-[#2d4a35] transition-colors cursor-pointer gap-2"
+            aria-label="Open cart"
           >
             <span className="relative">
               <ShoppingCart className="w-4 h-4" />
-              {isOrderRoute && cartUniqueCount > 0 && (
+              {cartUniqueCount > 0 && (
                 <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">
                   {cartUniqueCount}
                 </span>
               )}
             </span>
-            {isOrderRoute ? (
-              cartUniqueCount > 0 ? (
-                <span className="text-sm font-semibold">
-                  ₱{cartSubtotal}.00
-                </span>
-              ) : null
-            ) : (
-              <span className="text-sm font-semibold">Order Now</span>
+            {cartSubtotal > 0 && (
+              <span className="text-xs font-semibold">₱{cartSubtotal}.00</span>
             )}
           </button>
         </div>
@@ -257,21 +207,20 @@ export default function Header({onNavigate = () => {}}) {
             </a>
             <button
               onClick={handleCartClick}
-              className="flex items-center justify-center gap-2 bg-[#3c5e45] text-white px-3 py-2 rounded-xl text-sm font-semibold hover:bg-[#2d4a35] transition-colors cursor-pointer"
+              className="flex items-center justify-center bg-[#3c5e45] text-white p-2 rounded-xl hover:bg-[#2d4a35] transition-colors cursor-pointer gap-2"
+              aria-label="Open cart"
             >
               <span className="relative">
                 <ShoppingCart className="w-4 h-4" />
-                {isOrderRoute && cartUniqueCount > 0 && (
+                {cartUniqueCount > 0 && (
                   <span className="absolute -right-2 -top-2 h-5 min-w-5 px-1 rounded-full bg-[#c30010] text-white text-[10px] font-bold grid place-items-center">
                     {cartUniqueCount}
                   </span>
                 )}
               </span>
-              {isOrderRoute
-                ? cartUniqueCount > 0
-                  ? `₱${cartSubtotal}.00`
-                  : 'Order'
-                : 'Order Now'}
+              {cartSubtotal > 0 && (
+                <span className="text-xs font-semibold">₱{cartSubtotal}.00</span>
+              )}
             </button>
           </div>
         </div>

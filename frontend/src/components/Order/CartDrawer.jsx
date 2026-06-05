@@ -1,53 +1,46 @@
-copy the exact code (that is no typescript and use mock data only) for this file
-frontend/src/components/Order/CartDrawer.jsx
-
-here is the code:
-'use client';
-
+import {X, Minus, Plus, Bike, ShoppingBag, CalendarClock, ChevronDown} from 'lucide-react';
 import {useMemo, useState} from 'react';
-import Image from 'next/image';
-import {
-  X,
-  Minus,
-  Plus,
-  Bike,
-  ShoppingBag,
-  CalendarClock,
-  ChevronDown
-} from 'lucide-react';
-import {useRouter} from 'next/navigation';
-import {Button} from '@/components/ui/button';
-import {getCartSubtotal, useCartStore} from '@/app/store/cartStore';
-import {useCartUiStore} from '@/app/store/cartUiStore';
-import {useOrderDetailsStore} from '@/app/store/orderDetailsStore';
-import {usePublicPromosQuery} from '@/lib/hooks/promos/usePromos';
-import {getDiscountedUnitPrice} from '@/lib/utils/promoPricing';
-import CartRemoveConfirmModal from './CartRemoveConfirmModal';
 
-type CartDrawerProps = {
-  deliveryFee?: number;
-};
+const MOCK_PROMOS = [
+  {
+    _id: 'promo-1', title: 'Weekend Special', discountPercent: 10,
+    productIds: ['1'], promoType: 'discount',
+    description: '10% off whole lechon every weekend.',
+    imageUrl: '',
+  },
+  {
+    _id: 'promo-2', title: 'Kawali Deal', discountPercent: 15,
+    productIds: ['2'], promoType: 'discount',
+    description: '15% off Lechon Kawali.',
+    imageUrl: '',
+  },
+];
 
-export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
-  const router = useRouter();
-  const isOpen = useCartUiStore(s => s.isOpen);
-  const close = useCartUiStore(s => s.close);
-  const items = useCartStore(s => s.items);
-  const setQty = useCartStore(s => s.setQty);
-  const removeItem = useCartStore(s => s.removeItem);
-
-  const orderType = useOrderDetailsStore(s => s.orderType);
-  const timing = useOrderDetailsStore(s => s.timing);
-  const reservationGuests = useOrderDetailsStore(s => s.reservationGuests);
-  const reservationDate = useOrderDetailsStore(s => s.reservationDate);
-  const reservationTime = useOrderDetailsStore(s => s.reservationTime);
-  const setOrderType = useOrderDetailsStore(s => s.setOrderType);
-  const setTiming = useOrderDetailsStore(s => s.setTiming);
-  const setReservationGuests = useOrderDetailsStore(
-    s => s.setReservationGuests
+function getDiscountedUnitPrice({promos, productId, basePrice}) {
+  const matchingPromo = promos.find(
+    p => p.promoType === 'discount' && p.productIds?.includes(productId)
   );
-  const setReservationDate = useOrderDetailsStore(s => s.setReservationDate);
-  const setReservationTime = useOrderDetailsStore(s => s.setReservationTime);
+  if (matchingPromo && matchingPromo.discountPercent) {
+    return {unitPrice: Math.round(basePrice * (1 - matchingPromo.discountPercent / 100))};
+  }
+  return {unitPrice: basePrice};
+}
+
+export default function CartDrawer({open, onClose, onNavigate, items, onUpdateQty, onRemoveItem, deliveryFee = 49}) {
+  const [orderType, setOrderType] = useState('Delivery');
+  const [timing, setTiming] = useState('ASAP');
+  const [reservationGuests, setReservationGuests] = useState(1);
+  const [reservationDate, setReservationDate] = useState('');
+  const [reservationTime, setReservationTime] = useState('');
+  const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
+  const [draftOrderType, setDraftOrderType] = useState('Delivery');
+  const [draftTiming, setDraftTiming] = useState('ASAP');
+  const [draftReservationGuests, setDraftReservationGuests] = useState(1);
+  const [draftReservationDate, setDraftReservationDate] = useState('');
+  const [draftReservationTime, setDraftReservationTime] = useState('18:00');
+  const [removeTarget, setRemoveTarget] = useState(null);
+
+  const [promos] = useState(MOCK_PROMOS);
 
   const defaultScheduleDate = useMemo(() => {
     const d = new Date();
@@ -57,43 +50,24 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
     return `${yyyy}-${mm}-${dd}`;
   }, []);
 
-  const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
-
-  const [draftOrderType, setDraftOrderType] = useState<
-    'Delivery' | 'Pick-up' | 'Reservation'
-  >('Delivery');
-  const [draftTiming, setDraftTiming] = useState<'ASAP'>('ASAP');
-  const [draftReservationGuests, setDraftReservationGuests] = useState(1);
-  const [draftReservationDate, setDraftReservationDate] =
-    useState(defaultScheduleDate);
-  const [draftReservationTime, setDraftReservationTime] = useState('18:00');
-  const [removeTarget, setRemoveTarget] = useState<{
-    productId: string;
-    name: string;
-  } | null>(null);
-
-  const promosQuery = usePublicPromosQuery();
-  const promos = useMemo(
-    () => promosQuery.data?.promos ?? [],
-    [promosQuery.data?.promos]
-  );
-
   const subtotal = useMemo(() => {
-    if (promos.length === 0) return getCartSubtotal(items);
+    if (promos.length === 0) {
+      return items.reduce((sum, i) => sum + i.price * i.qty, 0);
+    }
     return items.reduce((sum, i) => {
       const {unitPrice} = getDiscountedUnitPrice({
         promos,
         productId: i.productId,
-        basePrice: i.price
+        basePrice: i.price,
       });
       return sum + unitPrice * i.qty;
     }, 0);
   }, [items, promos]);
-  const effectiveDeliveryFee =
-    items.length > 0 && orderType === 'Delivery' ? deliveryFee : 0;
+
+  const effectiveDeliveryFee = items.length > 0 && orderType === 'Delivery' ? deliveryFee : 0;
   const total = subtotal + effectiveDeliveryFee;
 
-  if (!isOpen) return null;
+  if (!open) return null;
 
   const openOrderDetails = () => {
     setDraftOrderType(orderType);
@@ -118,33 +92,29 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
   };
 
   const goToCheckout = () => {
-    const id =
-      typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID()
-        : String(Date.now());
-    close();
-    router.push(`/checkout/${id}`);
+    const id = String(Date.now());
+    onClose();
+    onNavigate('checkout', {orderId: id});
   };
 
-  const requestRemoveItem = (item: {productId: string; name: string}) => {
+  const requestRemoveItem = (item) => {
     setRemoveTarget({productId: item.productId, name: item.name});
   };
 
   const confirmRemoveItem = () => {
     if (!removeTarget) return;
-    removeItem(removeTarget.productId);
+    onRemoveItem(removeTarget.productId);
     setRemoveTarget(null);
   };
 
-  const summaryText =
-    orderType === 'Reservation'
-      ? `${orderType}, ${reservationDate}, ${reservationTime}`
-      : `${orderType}, Today, ${timing}`;
+  const summaryText = orderType === 'Reservation'
+    ? `${orderType}, ${reservationDate || defaultScheduleDate}, ${reservationTime || '18:00'}`
+    : `${orderType}, Today, ${timing}`;
 
   return (
     <div
       className="fixed inset-0 z-[80] bg-black/40"
-      onClick={close}
+      onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
@@ -173,16 +143,14 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
             </button>
           </div>
 
-          <Button
+          <button
             type="button"
-            onClick={close}
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
+            onClick={onClose}
+            className="rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
-          </Button>
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-3">
@@ -198,15 +166,15 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                   className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-3"
                 >
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-50">
-                    <Image
+                    <img
                       src={
                         item.imageUrl && item.imageUrl.length > 0
                           ? item.imageUrl
-                          : '/assets/sample_menu.png'
+                          : 'src/assets/sample_menu.png'
                       }
                       alt={item.name}
-                      fill
-                      className="object-cover"
+                      className="w-full h-full object-cover"
+                      onError={e => { e.target.style.display = 'none'; }}
                     />
                   </div>
 
@@ -229,7 +197,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                         const {unitPrice} = getDiscountedUnitPrice({
                           promos,
                           productId: item.productId,
-                          basePrice: item.price
+                          basePrice: item.price,
                         });
 
                         const isDiscounted = unitPrice < item.price;
@@ -253,13 +221,13 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                       <div className="inline-flex items-center rounded-full border border-gray-200 overflow-hidden">
                         <button
                           type="button"
-                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
+                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer"
                           onClick={() => {
                             if (item.qty <= 1) {
                               requestRemoveItem(item);
                               return;
                             }
-                            setQty(item.productId, item.qty - 1);
+                            onUpdateQty(item.productId, item.qty - 1);
                           }}
                           aria-label="Decrease"
                         >
@@ -270,8 +238,8 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                         </div>
                         <button
                           type="button"
-                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50"
-                          onClick={() => setQty(item.productId, item.qty + 1)}
+                          className="h-8 w-10 inline-flex items-center justify-center hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => onUpdateQty(item.productId, item.qty + 1)}
                           aria-label="Increase"
                         >
                           <Plus className="h-4 w-4" />
@@ -289,9 +257,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-700">
                   <span>Delivery fee</span>
-                  <span className="font-semibold">
-                    ₱{effectiveDeliveryFee}.00
-                  </span>
+                  <span className="font-semibold">₱{effectiveDeliveryFee}.00</span>
                 </div>
               </div>
             </div>
@@ -306,14 +272,14 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
             </p>
           </div>
 
-          <Button
+          <button
             type="button"
-            className="mt-4 w-full h-12 rounded-full bg-[#3c5e45] text-white hover:bg-[#3c5e45]"
             disabled={items.length === 0}
             onClick={goToCheckout}
+            className="mt-4 w-full h-12 rounded-full bg-[#3c5e45] text-white font-semibold hover:bg-[#2d4a35] transition-colors cursor-pointer disabled:opacity-50"
           >
             Go To Checkout
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -330,29 +296,25 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
           >
             <div className="flex items-center justify-between px-6 py-5 border-b">
               <p className="text-xl font-bold text-gray-900">Order details</p>
-              <Button
+              <button
                 type="button"
                 onClick={cancelOrderDetails}
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
+                className="rounded-full p-2 hover:bg-gray-100 transition-colors cursor-pointer"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
-              </Button>
+              </button>
             </div>
 
             <div className="px-6 py-6">
-              <p className="text-sm font-semibold text-gray-900">
-                Select order type
-              </p>
+              <p className="text-sm font-semibold text-gray-900">Select order type</p>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setDraftOrderType('Delivery')}
                   className={
-                    'h-12 rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
+                    'h-12 rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold cursor-pointer ' +
                     (draftOrderType === 'Delivery'
                       ? 'bg-[#3c5e45] text-white'
                       : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
@@ -366,7 +328,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                   type="button"
                   onClick={() => setDraftOrderType('Pick-up')}
                   className={
-                    'h-12 rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
+                    'h-12 rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold cursor-pointer ' +
                     (draftOrderType === 'Pick-up'
                       ? 'bg-[#3c5e45] text-white'
                       : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
@@ -382,7 +344,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                   type="button"
                   onClick={() => setDraftOrderType('Reservation')}
                   className={
-                    'h-12 w-full rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold ' +
+                    'h-12 w-full rounded-xl border px-4 inline-flex items-center justify-center gap-2 font-semibold cursor-pointer ' +
                     (draftOrderType === 'Reservation'
                       ? 'bg-[#3c5e45] text-white'
                       : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50')
@@ -396,9 +358,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
               {draftOrderType === 'Reservation' ? (
                 <div className="mt-6 space-y-6">
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      Schedule
-                    </p>
+                    <p className="text-sm font-semibold text-gray-900">Schedule</p>
                     <div className="mt-3 flex flex-wrap items-center gap-3">
                       <input
                         type="date"
@@ -416,9 +376,7 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
                   </div>
 
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      Number of Guests
-                    </p>
+                    <p className="text-sm font-semibold text-gray-900">Number of Guests</p>
                     <div className="mt-3 flex items-center gap-3">
                       <input
                         type="number"
@@ -441,31 +399,59 @@ export default function CartDrawer({deliveryFee = 49}: CartDrawerProps) {
             </div>
 
             <div className="flex items-center justify-end gap-3 px-6 py-5 border-t">
-              <Button
+              <button
                 type="button"
-                variant="outline"
                 onClick={cancelOrderDetails}
+                className="h-10 rounded-xl border border-gray-200 px-4 text-sm font-semibold text-gray-900 hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
-                className="bg-[#c30010] text-white hover:bg-[#a6000d]"
                 onClick={confirmOrderDetails}
+                className="h-10 rounded-xl bg-[#c30010] px-4 text-sm font-semibold text-white hover:bg-[#a6000d] transition-colors cursor-pointer"
               >
                 Confirm
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       ) : null}
 
-      <CartRemoveConfirmModal
-        isOpen={removeTarget !== null}
-        itemName={removeTarget?.name ?? ''}
-        onCancel={() => setRemoveTarget(null)}
-        onConfirm={confirmRemoveItem}
-      />
+      {removeTarget !== null ? (
+        <div
+          className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center p-4"
+          onClick={() => setRemoveTarget(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white shadow-2xl p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-lg font-bold text-gray-900">Remove item</p>
+            <p className="mt-2 text-sm text-gray-600">
+              Are you sure you want to remove <span className="font-semibold">{removeTarget.name}</span> from your cart?
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setRemoveTarget(null)}
+                className="h-10 rounded-xl border border-gray-200 px-4 text-sm font-semibold text-gray-900 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmRemoveItem}
+                className="h-10 rounded-xl bg-[#c30010] px-4 text-sm font-semibold text-white hover:bg-[#a6000d] transition-colors cursor-pointer"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
